@@ -1,4 +1,9 @@
+#
 data/*
 results/*
 *.log
 *.csv
+*dietscore*
+*orc*
+*.do
+*.Rhistory
