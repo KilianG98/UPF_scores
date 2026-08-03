@@ -1,9 +1,11 @@
 #
 data/*
 results/*
+scripts/old/*
 *.log
 *.csv
 *dietscore*
 *orc*
 *.do
 *.Rhistory
+
