@@ -1,0 +1,512 @@
+)
+pred.fig5.count
+# Predicted probability of belonging to the excess-zero component
+pred.fig5.zero <- avg_predictions(
+m7,
+variables = list(
+age = 18:80,
+gender_fac = c("Male", "Female")
+),
+by = c("age", "gender_fac"),
+type = "zero"
+)
+pred.fig5.zero
+# Convert each prediction object to a tibble and add a prediction-type label
+plotdat.fig5 <- bind_rows(
+pred.fig5 %>%
+as_tibble() %>%
+mutate(prediction_type = "Overall expected count"),
+pred.fig5.count %>%
+as_tibble() %>%
+mutate(prediction_type = "Count component only"),
+pred.fig5.zero %>%
+as_tibble() %>%
+mutate(prediction_type = "Probability of excess zero")
+) %>%
+mutate(
+prediction_type = factor(
+prediction_type,
+levels = c(
+"Overall expected count",
+"Count component only",
+"Probability of excess zero"
+)
+),
+gender_fac = factor(gender_fac, levels = c("Male", "Female"))
+)
+plotdat.fig5
+# Plot predicted values from the zero-inflated negative binomial model
+fig5 <- ggplot(
+plotdat.fig5,
+aes(
+x = age,
+y = estimate,
+color = gender_fac,
+fill = gender_fac
+)
+) +
+geom_ribbon(
+aes(ymin = conf.low, ymax = conf.high),
+alpha = 0.4,
+color = NA
+) +
+geom_line(linewidth = 1) +
+facet_wrap(~ prediction_type, scales = "free_y") +
+scale_color_manual(
+values = rev(brewer.pal(3, "Set2"))[1:2],
+name = "Gender"
+) +
+scale_fill_manual(
+values = rev(brewer.pal(3, "Set2"))[1:2],
+name = "Gender"
+) +
+labs(
+title = "Predictions from the zero-inflated negative binomial model",
+x = "Age",
+y = "Predicted value"
+) +
+theme_bw(base_size = 15) +
+theme(
+plot.title = element_text(hjust = 0.5),
+panel.grid.major.x = element_blank(),
+panel.grid.minor.x = element_blank()
+)
+fig5
+# Save plot
+png(file = paste0(GRAPHS, "fig5_zinb_pred_age_gender_Rstats.png"), width = 2500, height = 1500, res = 300)
+fig5
+dev.off()
+# ------------------------------------------------------------------------------
+# 14) Test the IIA assumption using the Hausman-McFadden test
+# ------------------------------------------------------------------------------
+# The multinomial logit model assumes independence of irrelevant alternatives
+# This means that the relative odds of two outcome categories should not depend
+# on whether another outcome category is included in the choice set
+# Example:
+# The relative odds of being a Carnivore rather than a Flexitarian
+# should not depend strongly on whether Vegetarians are included as another option
+# The Hausman-McFadden test compares two models
+# First, the multinomial model is estimated with all outcome categories
+# Second, the model is re-estimated after removing one outcome category
+# H0: The IIA assumption holds
+# H1: The IIA assumption is violated
+# p > .05: no strong evidence against IIA
+# p < .05: evidence that IIA may be violated
+# Install once if needed
+# install.packages("mlogit")
+library(mlogit)
+# Prepare data for mlogit
+vegan_mlogit_input <- vegan %>%
+mutate(
+diet_type_vegetarian_base = relevel(diet_type, ref = "Vegetarians"),
+diet_type_carnivore_base = relevel(diet_type, ref = "Carnivores")
+)
+# Convert data to mlogit format
+vegan_mlogit_veg <- mlogit.data(
+vegan_mlogit_input,
+choice = "diet_type_vegetarian_base",
+shape = "wide"
+)
+# Re-estimate the multinomial model using mlogit
+# Individual-specific predictors are entered after |
+m3_mlogit_veg <- mlogit(
+diet_type_vegetarian_base ~ 1 |
+canteen_use +
+threat_climate +
+gender_fac +
+age +
+hhincome,
+data = vegan_mlogit_veg,
+reflevel = "Vegetarians"
+)
+summary(m3_mlogit_veg)
+# Remove Carnivores and compare Vegetarians with Flexitarians
+iia_no_carnivores <- hmftest(
+m3_mlogit_veg,
+c("Vegetarians", "Flexitarians")
+)
+iia_no_carnivores
+# Remove Flexitarians and compare Vegetarians with Carnivores
+iia_no_flexitarians <- hmftest(
+m3_mlogit_veg,
+c("Vegetarians", "Carnivores")
+)
+iia_no_flexitarians
+# Optional: remove Vegetarians
+# This requires a model where the reference category is not Vegetarians
+vegan_mlogit_car <- mlogit.data(
+vegan_mlogit_input,
+choice = "diet_type_carnivore_base",
+shape = "wide"
+)
+m3_mlogit_car <- mlogit(
+diet_type_carnivore_base ~ 1 |
+canteen_use +
+threat_climate +
+gender_fac +
+age +
+hhincome,
+data = vegan_mlogit_car,
+reflevel = "Carnivores"
+)
+summary(m3_mlogit_car)
+# Remove Vegetarians and compare Carnivores with Flexitarians
+iia_no_vegetarians <- hmftest(
+m3_mlogit_car,
+c("Carnivores", "Flexitarians")
+)
+iia_no_vegetarians
+# ------------------------------------------------------------------------------
+# END OF FILE
+# ------------------------------------------------------------------------------
+library(survival)
+set.seed(123)
+n <- 4000
+# Simulate a 4-category cross-classified exposure variable
+# i   = normal-weight, lower bilirubin   (reference)
+# ii  = normal-weight, higher bilirubin
+# iii = overweight/obese, lower bilirubin
+# iv  = overweight/obese, higher bilirubin
+group <- factor(sample(c("i", "ii", "iii", "iv"), n, replace = TRUE),
+levels = c("i", "ii", "iii", "iv"))
+true_loghr <- c(i = 0, ii = 0.10, iii = 0.30, iv = 0.55)
+lp <- true_loghr[as.character(group)]
+time <- rexp(n, rate = 0.05 * exp(lp))
+status <- rep(1, n)
+dat <- data.frame(time, status, group)
+## --- Approach 1: Wald test via contrast on the original model ---------
+fit_orig <- coxph(Surv(time, status) ~ group, data = dat)
+co <- coef(fit_orig)
+vc <- vcov(fit_orig)
+b3 <- co["groupiii"]
+b4 <- co["groupiv"]
+v3 <- vc["groupiii", "groupiii"]
+v4 <- vc["groupiv", "groupiv"]
+cov34 <- vc["groupiii", "groupiv"]
+wald_stat <- (b4 - b3)^2 / (v3 + v4 - 2 * cov34)
+p_wald <- pchisq(wald_stat, df = 1, lower.tail = FALSE)
+## --- Approach 2: Relevel so group iii is the new reference -------------
+dat$group_relevel <- relevel(dat$group, ref = "iii")
+fit_relevel <- coxph(Surv(time, status) ~ group_relevel, data = dat)
+p_relevel <- summary(fit_relevel)$coefficients["group_releveliv", "Pr(>|z|)"]
+## --- Compare --------------------------------------------------------------
+cat("Wald contrast p-value:   ", p_wald, "\n")
+cat("Releveled model p-value: ", p_relevel, "\n")
+cat("Difference:              ", abs(p_wald - p_relevel), "\n")
+rm(list=ls())
+library(survival)
+library(dplyr)
+library(haven)
+library(stringr)
+library(forestplot)
+library(rms)
+setwd("C:/Users/kiliang98/phd/EPIC/alysha/analysis/UPF_scores")
+source("scripts/nogate/X_analysis_functions_nogate.R")
+df<- readRDS("data/working_file_w_SG3.rds")
+################################################################################
+#define vars--------------------------------------------------------------------
+################################################################################
+covars <- c("energy_intake_overall", "alc_stat_0_0_touch",  "smoke_stat_0_0", "pa_total_mets", "education_cat2","score_diet",
+"ever_hrt_0_0", "menopause_status_0_0" )
+stratify <- c("assess_cen",  "age_cat_5yr", "sex")
+#sweets
+upf_sg_5_q <- c("UPF_s1_rs_q", "UPF_s2_rs_q", "UPF_s3_rs_q", "UPF_s4_rs_q", "UPF_s5_rs_q")
+#set quartiles or binary classification
+upf_q_or_bin <- upf_sg_5_q
+#set max level accordingly
+max_l <- ifelse(all(upf_q_or_bin == upf_sg_5_q), 3, 1)
+#helper_vars indicating grouping
+sweet_or_pba <- ifelse(startsWith(upf_q_or_bin[1], "UPF_s1"), "sweet", "pba")
+q_or_bin<- ifelse(all(upf_q_or_bin == upf_sg_5_q), "q", "bin")
+#calc unweighted score
+df$UPF_sg_sum <- rowSums(
+data.frame(lapply(df[, upf_q_or_bin], function(x) {
+# 17.02 Convert factor → character → numeric, recoding "nC" as 0
+x <- as.character(x)
+x[x == "nC"] <- "0"
+as.numeric(x)
+}))
+)
+df$UPF_sg_sum_sd <- df$UPF_sg_sum / sd(df$UPF_sg_sum)
+#define outcomes
+outcome_s <- c("obesity_cancer", "allcvd_inc", "t2dm_inc" , "total_mortality" )
+outcome_t <- c( "age_exit_first_cancer", "age_exit_first_CVD", "age_exit_first_T2DM", "age_exit_first_mortality")
+outcome_labels <- c("ORC", "CVD","T2DM", "Death")
+interactions <- list()
+#19.02 gate adjustment
+gate_adjust <- paste0(upf_q_or_bin, "nC")
+covars_gate <- c(covars, gate_adjust)
+################################################################################
+#modelling, calculating weights-------------------------------------------------
+################################################################################
+#introduce lvl_ids to df. lvl_ids indicate if var == lvl
+#one lvl id for each lvl of each var will be created.
+#This will be used later for calculation of the score.
+tmp_res <- get_lvl_ids(vars=upf_q_or_bin,max_l= max_l, df=df)
+df <- tmp_res$df
+lvl_vars <- tmp_res$new_vars
+#fit models with binary or quartiles of subgroups
+cox_models1 <- fit_cox_models(outcome_t, outcome_s, upf_q_or_bin, covars, stratify, df, outcome_labels, interactions)
+# Extract hazard ratios and beta values from the results
+hr_results <- extract_hr_results(cox_models = cox_models1)
+#filter for beta values of subgroups and interactions
+upf_pattern <- paste(upf_q_or_bin, collapse = "|")
+filtered_hr_results<- lapply(hr_results, function(df) {
+df[grepl(upf_pattern, rownames(df)), ]
+})
+#19.02 filter gate variables, not needed for score calc
+# filtered_hr_results1 <- lapply(filtered_hr_results, function(df) {
+#   df[!grepl("nC", rownames(df)), ]
+# })
+#calculate the weighted sum of subgroups
+#based on beta values from the earlier cox models
+df <- calculate_weighted_score(df,outcome_labels, filtered_hr_results )
+weighted_scores <- c()
+for(oc in outcome_labels){ weighted_scores <- cbind (weighted_scores, paste0(oc, "_UPF_sg_weighted_sd"))}
+#fit weighted vs unweighted models
+cox_models_specific_scaled <- fit_models(outcome_t, outcome_s, scores=weighted_scores , covars, stratify, df, outcome_labels)
+cox_models_nonspecific_scaled <- fit_models(outcome_t, outcome_s, scores=c("UPF_sg_sum_sd", "UPF_sg_sum_sd", "UPF_sg_sum_sd", "UPF_sg_sum_sd") , covars_gate, stratify, df, outcome_labels)
+cox_models_specific_scaled
+cox_models_nonspecific_scaled
+library(riskRegression)
+install.packages("riskRegression")
+library(riskRegression)
+library(survival)
+library(purrr)
+library(dplyr)
+outcomes <- c("ORC", "CVD", "T2DM", "Death")
+# Set evaluation horizon (e.g., 3650 days / ~10 years of follow-up)
+time_horizon <- 3650
+ibs_results <- map_dfr(outcomes, function(out) {
+mod_spec   <- cox_models_specific_scaled[[out]]
+mod_nonspec <- cox_models_nonspecific_scaled[[out]]
+# Run Score across both models and the Null (Kaplan-Meier) model
+res_score <- Score(
+object = list("Specific_Score" = mod_spec, "Nonspecific_Score" = mod_nonspec),
+formula = Surv(time, status) ~ 1, # Replace time/status with your exact formula variables
+data = data,
+metrics = "brier",
+summary = "ipa",              # Index of Prediction Accuracy
+times = seq(100, time_horizon, by = 100),
+cens.model = "km"
+)
+# Extract Integrated Brier Scores (IBS)
+ibs_summary <- summary(res_score)$Brier$score
+# Return key values at the time horizon
+data.frame(
+Outcome             = out,
+IBS_Null_KM         = round(ibs_summary[model == "Null model", IBS][1], 4),
+IBS_Specific        = round(ibs_summary[model == "Specific_Score", IBS][1], 4),
+IBS_Nonspecific     = round(ibs_summary[model == "Nonspecific_Score", IBS][1], 4),
+IPA_Specific_Pct    = round(ibs_summary[model == "Specific_Score", IPA][1] * 100, 2),
+IPA_Nonspecific_Pct = round(ibs_summary[model == "Nonspecific_Score", IPA][1] * 100, 2)
+)
+})
+library(riskRegression)
+library(survival)
+library(purrr)
+library(dplyr)
+# 1. Force R to recognize your dataset by giving it a unique name
+my_df <- data # Assuming 'data' is what your dataset is currently named
+outcomes <- c("ORC", "CVD", "T2DM", "Death")
+time_horizon <- 3650 # Evaluate at 10 years (adjust if needed)
+ibs_results <- map_dfr(outcomes, function(out) {
+mod_spec   <- cox_models_specific_scaled[[out]]
+mod_nonspec <- cox_models_nonspecific_scaled[[out]]
+# 2. Run Score with the uniquely named dataframe
+res_score <- Score(
+object = list("Specific_Score" = mod_spec, "Nonspecific_Score" = mod_nonspec),
+formula = Surv(time, status) ~ 1, # IMPORTANT: Change 'time' and 'status' to your exact survival variable names
+data = my_df,                     # <--- Fixed argument
+metrics = "brier",
+summary = "ipa",
+times = time_horizon,             # Evaluate exactly at the horizon to simplify extraction
+cens.model = "km"
+)
+# 3. Extract the Brier score results table safely
+brier_table <- as.data.frame(res_score$Brier$score)
+# Safely pull the specific values
+ibs_null <- brier_table$IBS[brier_table$model == "Null model"]
+ibs_spec <- brier_table$IBS[brier_table$model == "Specific_Score"]
+ibs_nonspec <- brier_table$IBS[brier_table$model == "Nonspecific_Score"]
+ipa_spec <- brier_table$IPA[brier_table$model == "Specific_Score"]
+ipa_nonspec <- brier_table$IPA[brier_table$model == "Nonspecific_Score"]
+data.frame(
+Outcome             = out,
+IBS_Null_KM         = round(ibs_null, 4),
+IBS_Specific        = round(ibs_spec, 4),
+IBS_Nonspecific     = round(ibs_nonspec, 4),
+IPA_Specific_Pct    = round(ipa_spec * 100, 2),
+IPA_Nonspecific_Pct = round(ipa_nonspec * 100, 2)
+)
+})
+library(riskRegression)
+library(survival)
+library(purrr)
+library(dplyr)
+# 1. Force R to recognize your dataset by giving it a unique name
+my_df <- data # Assuming 'data' is what your dataset is currently named
+outcomes <- c("ORC", "CVD", "T2DM", "Death")
+time_horizon <- 3650 # Evaluate at 10 years (adjust if needed)
+ibs_results <- map_dfr(outcomes, function(out) {
+mod_spec   <- cox_models_specific_scaled[[out]]
+mod_nonspec <- cox_models_nonspecific_scaled[[out]]
+# 2. Run Score with the uniquely named dataframe
+res_score <- Score(
+object = list("Specific_Score" = mod_spec, "Nonspecific_Score" = mod_nonspec),
+formula = Surv(time, status) ~ 1, # IMPORTANT: Change 'time' and 'status' to your exact survival variable names
+data = my_df,                     # <--- Fixed argument
+metrics = "brier",
+summary = "ipa",
+times = time_horizon,             # Evaluate exactly at the horizon to simplify extraction
+cens.model = "km"
+)
+# 3. Extract the Brier score results table safely
+brier_table <- as.data.frame(res_score$Brier$score)
+# Safely pull the specific values
+ibs_null <- brier_table$IBS[brier_table$model == "Null model"]
+ibs_spec <- brier_table$IBS[brier_table$model == "Specific_Score"]
+ibs_nonspec <- brier_table$IBS[brier_table$model == "Nonspecific_Score"]
+ipa_spec <- brier_table$IPA[brier_table$model == "Specific_Score"]
+ipa_nonspec <- brier_table$IPA[brier_table$model == "Nonspecific_Score"]
+data.frame(
+Outcome             = out,
+IBS_Null_KM         = round(ibs_null, 4),
+IBS_Specific        = round(ibs_spec, 4),
+IBS_Nonspecific     = round(ibs_nonspec, 4),
+IPA_Specific_Pct    = round(ipa_spec * 100, 2),
+IPA_Nonspecific_Pct = round(ipa_nonspec * 100, 2)
+)
+})
+library(riskRegression)
+library(survival)
+library(purrr)
+library(dplyr)
+# 1. Assign your dataset to a distinct name to avoid the base R function conflict
+my_df <- data
+outcomes <- c("ORC", "CVD", "T2DM", "Death")
+time_horizon <- 3650 # Evaluate at 10 years (adjust as needed for your follow-up)
+ibs_results <- map_dfr(outcomes, function(out) {
+mod_spec   <- cox_models_specific_scaled[[out]]
+mod_nonspec <- cox_models_nonspecific_scaled[[out]]
+# FIX 1: Override the internal call data name so Score() doesn't evaluate the function data()
+mod_spec$call$data <- quote(my_df)
+mod_nonspec$call$data <- quote(my_df)
+# FIX 2: Dynamically extract the exact Surv() outcome for this specific model
+# This pulls the LHS (e.g., Surv(ORC_time, ORC_event)) and appends ~ 1
+surv_form <- formula(mod_spec)
+null_form <- update(surv_form, . ~ 1)
+# Run the Brier Score calculation
+res_score <- Score(
+object = list("Specific_Score" = mod_spec, "Nonspecific_Score" = mod_nonspec),
+formula = null_form,
+data = my_df,
+metrics = "brier",
+summary = "ipa",
+times = time_horizon,
+cens.model = "km"
+)
+# Extract the Brier score results safely
+brier_table <- as.data.frame(res_score$Brier$score)
+ibs_null <- brier_table$IBS[brier_table$model == "Null model"]
+ibs_spec <- brier_table$IBS[brier_table$model == "Specific_Score"]
+ibs_nonspec <- brier_table$IBS[brier_table$model == "Nonspecific_Score"]
+ipa_spec <- brier_table$IPA[brier_table$model == "Specific_Score"]
+ipa_nonspec <- brier_table$IPA[brier_table$model == "Nonspecific_Score"]
+data.frame(
+Outcome             = out,
+IBS_Null_KM         = round(ibs_null, 4),
+IBS_Specific        = round(ibs_spec, 4),
+IBS_Nonspecific     = round(ibs_nonspec, 4),
+IPA_Specific_Pct    = round(ipa_spec * 100, 2),
+IPA_Nonspecific_Pct = round(ipa_nonspec * 100, 2)
+)
+})
+library(riskRegression)
+library(survival)
+library(purrr)
+library(dplyr)
+# 1. Assign your dataset to a distinct name to avoid the base R function conflict
+my_df <- data
+outcomes <- c("ORC", "CVD", "T2DM", "Death")
+time_horizon <- 3650 # Evaluate at 10 years (adjust as needed for your follow-up)
+ibs_results <- map_dfr(outcomes, function(out) {
+mod_spec   <- cox_models_specific_scaled[[out]]
+mod_nonspec <- cox_models_nonspecific_scaled[[out]]
+# FIX 1: Override the internal call data name so Score() doesn't evaluate the function data()
+mod_spec$call$data <- quote(my_df)
+mod_nonspec$call$data <- quote(my_df)
+# FIX 2: Dynamically extract the exact Surv() outcome for this specific model
+# This pulls the LHS (e.g., Surv(ORC_time, ORC_event)) and appends ~ 1
+surv_form <- formula(mod_spec)
+null_form <- update(surv_form, . ~ 1)
+# Run the Brier Score calculation
+res_score <- Score(
+object = list("Specific_Score" = mod_spec, "Nonspecific_Score" = mod_nonspec),
+formula = null_form,
+data = my_df,
+metrics = "brier",
+summary = "ipa",
+times = time_horizon,
+cens.model = "km"
+)
+# Extract the Brier score results safely
+brier_table <- as.data.frame(res_score$Brier$score)
+ibs_null <- brier_table$IBS[brier_table$model == "Null model"]
+ibs_spec <- brier_table$IBS[brier_table$model == "Specific_Score"]
+ibs_nonspec <- brier_table$IBS[brier_table$model == "Nonspecific_Score"]
+ipa_spec <- brier_table$IPA[brier_table$model == "Specific_Score"]
+ipa_nonspec <- brier_table$IPA[brier_table$model == "Nonspecific_Score"]
+data.frame(
+Outcome             = out,
+IBS_Null_KM         = round(ibs_null, 4),
+IBS_Specific        = round(ibs_spec, 4),
+IBS_Nonspecific     = round(ibs_nonspec, 4),
+IPA_Specific_Pct    = round(ipa_spec * 100, 2),
+IPA_Nonspecific_Pct = round(ipa_nonspec * 100, 2)
+)
+})
+library(riskRegression)
+library(survival)
+library(purrr)
+library(dplyr)
+# Make sure 'data' is actually loaded in your environment,
+# otherwise this will assign the base R data() function to df.
+outcomes <- c("ORC", "CVD", "T2DM", "Death")
+time_horizon <- 3650 # Evaluate at 10 years (adjust as needed for your follow-up)
+ibs_results <- map_dfr(outcomes, function(out) {
+mod_spec   <- cox_models_specific_scaled[[out]]
+mod_nonspec <- cox_models_nonspecific_scaled[[out]]
+# FIX 1: Override the internal call data name so Score() doesn't evaluate the function data()
+mod_spec$call$data <- quote(df)
+mod_nonspec$call$data <- quote(df)
+# FIX 2: Dynamically extract the exact Surv() outcome for this specific model
+# This pulls the LHS (e.g., Surv(ORC_time, ORC_event)) and appends ~ 1
+surv_form <- formula(mod_spec)
+null_form <- update(surv_form, . ~ 1)
+# Run the Brier Score calculation
+res_score <- Score(
+object = list("Specific_Score" = mod_spec, "Nonspecific_Score" = mod_nonspec),
+formula = null_form,
+data = df,
+metrics = "brier",
+summary = "ipa",
+times = time_horizon,
+cens.model = "km"
+)
+# Extract the Brier score results safely
+brier_table <- as.data.frame(res_score$Brier$score)
+ibs_null <- brier_table$IBS[brier_table$model == "Null model"]
+ibs_spec <- brier_table$IBS[brier_table$model == "Specific_Score"]
+ibs_nonspec <- brier_table$IBS[brier_table$model == "Nonspecific_Score"]
+ipa_spec <- brier_table$IPA[brier_table$model == "Specific_Score"]
+ipa_nonspec <- brier_table$IPA[brier_table$model == "Nonspecific_Score"]
+data.frame(
+Outcome             = out,
+IBS_Null_KM         = round(ibs_null, 4),
+IBS_Specific        = round(ibs_spec, 4),
+IBS_Nonspecific     = round(ibs_nonspec, 4),
+IPA_Specific_Pct    = round(ipa_spec * 100, 2),
+IPA_Nonspecific_Pct = round(ipa_nonspec * 100, 2)
+)
+})

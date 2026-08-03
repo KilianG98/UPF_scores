@@ -6,7 +6,6 @@ library(haven)
 library(stringr)
 library(forestplot)
 
-setwd("C:/Users/kiliang98/phd/EPIC/alysha/analysis/UPF_scores")
 
 df<- readRDS("data/working_file_w_SG3.rds")
 

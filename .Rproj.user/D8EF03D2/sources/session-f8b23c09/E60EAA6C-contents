@@ -1,8 +1,4 @@
-#6.7.26 version without gate variable adjusmten in the weighed score
-# non-consumers now contribute to the weighted score. unweighted score gets adjusted for non-consumption.
-
-#this is same workflow was main analyis, read in different files, adjsut for variables,  use other main exposures for sensitity analyses.
-
+#Crossvalidation, weights from EPIC are applied in UKB
 rm(list=ls())
 
 library(survival)
@@ -12,15 +8,12 @@ library(stringr)
 library(forestplot)
 library(rms)
 
-setwd("C:/Users/kiliang98/phd/EPIC/alysha/analysis/UPF_scores")
-
 source("scripts/nogate/X_analysis_functions_nogate.R")
 
-# df<- readRDS("data/working_file_w_SG3.rds")
-#for lag time
-# df<- readRDS("data/working_file_w_SG3_lag.rds")
-#for crude variable
-df<- readRDS("data/working_file_w_SG3_crude.rds")
+# df<- readRDS("data/working_file_w_SG2.rds")
+
+#16.2.26 new version, based on alternative definition of animalp subgroup
+df<- readRDS("data/working_file_w_SG3.rds")
 
 summary(df$UPF_g_day_noalc)
 sd(df$UPF_g_day_noalc)
@@ -30,7 +23,7 @@ sd(df$UPF_g_day_noalc)
 ################################################################################
 
 covars <- c("energy_intake_overall", "alc_stat_0_0_touch",  "smoke_stat_0_0", "pa_total_mets", "education_cat2","score_diet", 
-												 "ever_hrt_0_0", "menopause_status_0_0") # "bmi_m_0_0"
+												"ever_hrt_0_0", "menopause_status_0_0" ) # "bmi_m_0_0"
 stratify <- c("assess_cen",  "age_cat_5yr", "sex")
 
 
@@ -75,61 +68,8 @@ interactions <- list()
 gate_adjust <- paste0(upf_q_or_bin, "nC")
 covars_gate <- c(covars, gate_adjust)
 
-################################################################################
-#get significant interactions between subgroups--------------------------------
-################################################################################
-# #uncommment entire section to perform interaction analysis.
-# 
-# #get a list of interactions and p-values of improving the models as compared to
-# #models with no interactions.
-# #This is done for all outcomes.
-# interactions_w_p <- list()
-# for (i in seq_along(outcome_t)) {
-# 	inter <- get_significant_interactions(
-# 		outcome_t[i], outcome_s[i], upf_q_or_bin,
-# 		covars, stratify, df, outcome_labels, max_l = 3)
-# 
-# 	if (!is.null(inter) && length(inter) > 0) {
-# 		interactions_w_p[[outcome_labels[i]]] <- inter
-# 	} else {
-# 		interactions[[outcome_labels[i]]] <- NULL
-# 	}
-# }
-# print(interactions_w_p)
-# 
-# #use forward selection approach to add interactions one by one, stop when modelling
-# #is not significantly improved. Start with lowest p-values
-# #This is done for all outcomes
-# for (i in seq_along(outcome_labels)) {
-# 	oc <- outcome_labels[i]
-# 	outcome_time <- outcome_t[i]
-# 	outcome_stat <- outcome_s[i]
-# 
-# 	pvals <- interactions_w_p[[oc]]$p_values
-# 
-# 	if (!is.null(pvals) && length(pvals) > 0) {
-# 		interactions_sorted <- interactions_w_p[[oc]]$interactions[order(pvals)]
-# 
-# 		interactions[[oc]] <- select_inters(
-# 			interactions_sorted,
-# 			outcome_time, outcome_stat,
-# 			exposures = upf_q_or_bin,
-# 			covariates = covars,
-# 			strat = stratify,
-# 			data = df
-# 		)
-# 
-# 	} else {
-# 		print("isnull")
-# 		interactions[[oc]] <- NULL
-# 	}
-# }
-# 
-# saveRDS(interactions, "data/interactions_wpba_q.rds")
 
-# ################################################################################
-# 
-# ################################################################################
+################################################################################
 #modelling, calculating weights-------------------------------------------------
 ################################################################################
 
@@ -140,25 +80,14 @@ tmp_res <- get_lvl_ids(vars=upf_q_or_bin,max_l= max_l, df=df)
 df <- tmp_res$df
 lvl_vars <- tmp_res$new_vars
 
-#fit models with binary or quartiles of subgroups
-cox_models1 <- fit_cox_models(outcome_t, outcome_s, upf_q_or_bin, covars, stratify, df, outcome_labels, interactions)
-
-# Extract hazard ratios and beta values from the results
-hr_results <- extract_hr_results(cox_models = cox_models1)
-
-#filter for beta values of subgroups and interactions
-upf_pattern <- paste(upf_q_or_bin, collapse = "|")
-filtered_hr_results<- lapply(hr_results, function(df) {
-	df[grepl(upf_pattern, rownames(df)), ]
-})
-
-#19.02 filter gate variables, not needed for score calc
-# filtered_hr_results1 <- lapply(filtered_hr_results, function(df) {
-#   df[!grepl("nC", rownames(df)), ]
-# })
+#weights_valid <- read.csv("data/EPIC_weights_for_validation.csv", row.names = 1)
 
 #calculate the weighted sum of subgroups
 #based on beta values from the earlier cox models
+#df <- calculate_weighted_score_validation(df,outcome_labels, weights_valid)
+
+filtered_hr_results <- readRDS("data/EPIC_filtered_hr_results_validation.rds")
+
 df <- calculate_weighted_score(df,outcome_labels, filtered_hr_results )
 
 weighted_scores <- c()
@@ -339,18 +268,109 @@ for (oc in outcome_labels){
 hr_combined1 <- hr_combined1[!grepl("nC", hr_combined1$variable), ]
 
 
+#non-consumers
+df_nc <- data.frame(
+	n_nc = c(1, 2, 3, 4,5),
+	HR_nc_ORC = c(1, 2, 3, 4,5),
+	HR_nc_CVD = c(1, 2, 3, 4,5),
+	HR_nc_T2DM = c(1, 2, 3, 4,5),
+	HR_nc_Death = c(1, 2, 3, 4,5)
+)
+# Set row names
+rownames(df_nc) <- upf_q_or_bin
+
+for (sg in upf_q_or_bin){
+	sgnc <- paste0(sg,"nC")
+	n <- sum(as.numeric(as.character(df[[sgnc]])))
+	df_nc[sg, "n_nc"] <- n
+	for (oc in outcome_labels){
+		df_nc[sg, paste0("HR_nc_" ,oc)] <- paste0(filtered_hr_results[[oc]][paste0(sgnc, "1"), "hazard_ratio"],
+																																												" (",
+																																												filtered_hr_results[[oc]][paste0(sgnc, "1"), "lower_ci"],		
+																																												"-",
+																																												filtered_hr_results[[oc]][paste0(sgnc, "1"), "upper_ci"],		
+																																												")")
+		
+	}
+	
+}
 
 
+# Function to round HR strings
+round_hr_string <- function(x) {
+	# Extract numbers
+	nums <- as.numeric(unlist(regmatches(x, gregexpr("[0-9.]+", x))))
+	
+	# Round to 2 decimals
+	nums <- round(nums, 2)
+	
+	# Reconstruct string
+	paste0(
+		sprintf("%.2f", nums[1]), " (",
+		sprintf("%.2f", nums[2]), "-",
+		sprintf("%.2f", nums[3]), ")"
+	)
+}
+
+# Apply to all HR columns
+hr_cols <- grep("^HR_", names(df_nc), value = TRUE)
+df_nc[hr_cols] <- lapply(df_nc[hr_cols], function(col) sapply(col, round_hr_string))
+
+df_nc
+
+write.csv(df_HR_Cind, "results/HR_Cind_crossvalidation.csv" )
+
+
+################################################################################
+#save plots#
+################################################################################
 inter <- if (length(interactions) == 0) "noint" else "int"
 if(any(grep ("bmi", covars))){ inter <- paste0(inter, "_bmi_adj")}
-
+# or "noint"
 
 # Build filename prefix
-file_prefix <- paste0(sweet_or_pba, "_", q_or_bin, "_", inter, "_nogate_sensi_lag")
+file_prefix <- paste0("orc_", sweet_or_pba, "_", q_or_bin, "_", inter, "_nogate_validation")
 
-# write.csv(plot_df, "results/plot_df_ukb_nogate.csv" )
-# write.csv(hr_combined1, "results/hr_combined_ukb_nogate.csv" )
-write.csv(df_main, paste0("results/table_weights_ukb_", file_prefix, "_crude.csv" ))
-write.csv(df_HR_Cind, paste0("results/table_HR_ukb_", file_prefix, "_crude.csv" ))
-# saveRDS(df_interactions, paste0("results/df_interactions_", file_prefix, ".rds" ))
+outcome_labels <- c("ORC", "CVD","T2DM", "Death")
+
+#plot the HR for weightes vs unweighted sum of UPFs
+#calculated as HR^score, dataframe is returned withe the corresponding numbers
+
+create_outcome_plot(plot_df,hr_combined, outcome_labels)
+
+library(forestplot)
+library(grid)
+w <- ifelse(q_or_bin == "q", 20, 19)
+
+svg(paste0("results/plot_", file_prefix, ".svg"), width = w, height = 12) ######132.8!!!!!!!!!!!!!!
+
+grid.newpage()
+grid.newpage()
+if (q_or_bin == "q") {
+	widths <- unit(c(10, 10, 15, 10), "null")
+} else {
+	widths <- unit(rep(15, 4), "null")
+}
+
+pushViewport(viewport(
+	layout = grid.layout(
+		nrow = 1,
+		ncol = 4,
+		widths = widths
+	)
+))
+
+draw_fp <- function(fp_obj, row, col) {
+	pushViewport(viewport(layout.pos.row = row, layout.pos.col = col))
+	print(fp_obj)  # must explicitly print the forestplot
+	upViewport()
+}
+
+# Draw the 4 forestplots
+draw_fp(p_ORC, 1, 1)
+draw_fp(p_CVD, 1, 2)
+draw_fp(p_T2DM, 1, 3)
+draw_fp(p_Death, 1, 4)
+
+dev.off()
 

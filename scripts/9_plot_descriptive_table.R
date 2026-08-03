@@ -1,4 +1,4 @@
-
+#makes a table version of the plots
 rm(list=ls())
 
 library(survival)
@@ -7,9 +7,6 @@ library(haven)
 library(stringr)
 library(forestplot)
 library(rms)
-
-setwd("C:/Users/kiliang98/phd/EPIC/alysha/analysis/UPF_scores")
-
 
 df<- readRDS("data/working_file_w_SG3.rds")
 plot_df <- read.csv("results/plot_df_ukb_nogate.csv", row.names = 1) 

@@ -1,7 +1,7 @@
-# 06.07.2026: gate variables
+#energy adjustment of subgroups, vreate non-consumer variables
 
 rm(list=ls())
-setwd("C:/Users/kiliang98/phd/EPIC/alysha/analysis/UPF_scores")
+
 library(haven)
 library(dplyr)
 

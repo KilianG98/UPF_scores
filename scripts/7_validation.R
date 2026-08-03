@@ -1,5 +1,4 @@
-#6.7.26 version without gate variable adjusmten in the weighed score
-# non-consumers now contribute to the weighted score. unweighted score gets adjusted for non-consumption.
+#Crossvalidation, weights from EPIC are applied in UKB
 rm(list=ls())
 
 library(survival)
@@ -8,8 +7,6 @@ library(haven)
 library(stringr)
 library(forestplot)
 library(rms)
-
-setwd("C:/Users/kiliang98/phd/EPIC/alysha/analysis/UPF_scores")
 
 source("scripts/nogate/X_analysis_functions_nogate.R")
 
