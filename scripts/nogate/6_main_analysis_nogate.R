@@ -1,3 +1,8 @@
+#6.7.26 version without gate variable adjusmten in the weighed score
+# non-consumers now contribute to the weighted score. unweighted score gets adjusted for non-consumption.
+
+
+
 rm(list=ls())
 
 library(survival)
@@ -7,46 +12,25 @@ library(stringr)
 library(forestplot)
 library(rms)
 
-setwd("C:/Users/kiliang98/phd/EPIC/alysha/analysis")
+setwd("C:/Users/kiliang98/phd/EPIC/alysha/analysis/UPF_scores")
 
-source("scripts/X_analysis_functions_v2.R")
+source("scripts/nogate/X_analysis_functions_nogate.R")
 
-# df<- readRDS("data/working_file_w_SG2.rds")
-
-#16.2.26 new version, based on alternative definition of animalp subgroup
 df<- readRDS("data/working_file_w_SG3.rds")
-################################################################################
-#tst
-################################################################################
-# upf_s_5 <- c( "UPF_beverages_g_day_noalc","UPF_animalp_g_day","UPF_sweets_g_day","UPF_breads_g_day",  "UPF_other_g_day" )
-# upf_s_5_rs <- c("UPF_s1_rs", "UPF_s2_rs", "UPF_s3_rs", "UPF_s4_rs", "UPF_s5_rs" )
-# 
-# df <- df %>%
-# 	mutate(across(all_of(upf_s_5), 
-# 															~ factor(ntile(., 4) - 1), 
-# 															.names = "{.col}_q"))
-# 
-# upf_sg_5_q <- c( "UPF_beverages_g_day_noalc_q","UPF_animalp_g_day_q","UPF_sweets_g_day_q","UPF_breads_g_day_q",  "UPF_other_g_day_q" )
+
 
 ################################################################################
 #define vars--------------------------------------------------------------------
 ################################################################################
 
-covars <- c("energy_intake_overall", "alc_stat_0_0_touch",  "smoke_stat_0_0", "pa_total_mets", "education_cat2", 
-												 "ever_hrt_0_0", "menopause_status_0_0" ) # "bmi_m_0_0"
-stratify <- c("assess_cen",  "age_cat_5yr", "sex","score_diet")
+covars <- c("energy_intake_overall", "alc_stat_0_0_touch",  "smoke_stat_0_0", "pa_total_mets", "education_cat2","score_diet", 
+												 "ever_hrt_0_0", "menopause_status_0_0" )
+stratify <- c("assess_cen",  "age_cat_5yr", "sex")
 
 
-#PBA
-# upf_sg_5_q <- c("UPF_sg1_rs_q", "UPF_sg2_rs_q", "UPF_sg3_rs_q", "UPF_sg4_rs_q", "UPF_sg5_rs_q" )
+
 #sweets
 upf_sg_5_q <- c("UPF_s1_rs_q", "UPF_s2_rs_q", "UPF_s3_rs_q", "UPF_s4_rs_q", "UPF_s5_rs_q")
-
-#PBA
-#upf_sg_5_bin <- c("UPF_sg1_rs_bin", "UPF_sg2_rs_bin", "UPF_sg3_rs_bin", "UPF_sg4_rs_bin", "UPF_sg5_rs_bin" )
-#sweets
-upf_sg_5_bin <-c("UPF_s1_rs_bin", "UPF_s2_rs_bin", "UPF_s3_rs_bin", "UPF_s4_rs_bin", "UPF_s5_rs_bin" )
-
 
 
 #set quartiles or binary classification
@@ -61,8 +45,8 @@ q_or_bin<- ifelse(all(upf_q_or_bin == upf_sg_5_q), "q", "bin")
 df$UPF_sg_sum <- rowSums(
 	data.frame(lapply(df[, upf_q_or_bin], function(x) {
 		# 17.02 Convert factor → character → numeric, recoding "nC" as 0
-		# x <- as.character(x)
-		# x[x == "nC"] <- "0"
+		x <- as.character(x)
+		x[x == "nC"] <- "0"
 		as.numeric(x)
 	}))
 )
@@ -80,59 +64,6 @@ covars_gate <- c(covars, gate_adjust)
 
 
 ################################################################################
-#get significant interactions between subgroups--------------------------------
-# ################################################################################
-
-# #interactions <- readRDS("data/interactions_wpba_q.rds")
-
-# #get a list of interactions and p-values of improving the models as compared to
-# #models with no interactions.
-# #This is done for all outcomes.
-# interactions_w_p <- list()
-# for (i in seq_along(outcome_t)) {
-# 	inter <- get_significant_interactions(
-# 		outcome_t[i], outcome_s[i], upf_q_or_bin,
-# 		covars, stratify, df, outcome_labels, max_l = 3)
-# 
-# 	if (!is.null(inter) && length(inter) > 0) {
-# 		interactions_w_p[[outcome_labels[i]]] <- inter
-# 	} else {
-# 		interactions[[outcome_labels[i]]] <- NULL
-# 	}
-# }
-# print(interactions_w_p)
-# 
-# #use forward selection approach to add interactions one by one, stop when modelling
-# #is not significantly improved. Start with lowest p-values
-# #This is done for all outcomes
-# for (i in seq_along(outcome_labels)) {
-# 	oc <- outcome_labels[i]
-# 	outcome_time <- outcome_t[i]
-# 	outcome_stat <- outcome_s[i]
-# 
-# 	pvals <- interactions_w_p[[oc]]$p_values
-# 
-# 	if (!is.null(pvals) && length(pvals) > 0) {
-# 		interactions_sorted <- interactions_w_p[[oc]]$interactions[order(pvals)]
-# 
-# 		interactions[[oc]] <- select_inters(
-# 			interactions_sorted,
-# 			outcome_time, outcome_stat,
-# 			exposures = upf_q_or_bin,
-# 			covariates = covars,
-# 			strat = stratify,
-# 			data = df
-# 		)
-# 
-# 	} else {
-# 		print("isnull")
-# 		interactions[[oc]] <- NULL
-# 	}
-# }
-
-# saveRDS(interactions, "data/interactions_wpba_q.rds")
-
-################################################################################
 #modelling, calculating weights-------------------------------------------------
 ################################################################################
 
@@ -144,40 +75,31 @@ df <- tmp_res$df
 lvl_vars <- tmp_res$new_vars
 
 #fit models with binary or quartiles of subgroups
-cox_models1 <- fit_cox_models(outcome_t, outcome_s, upf_q_or_bin, covars_gate, stratify, df, outcome_labels, interactions)
+cox_models1 <- fit_cox_models(outcome_t, outcome_s, upf_q_or_bin, covars, stratify, df, outcome_labels, interactions)
 
 # Extract hazard ratios and beta values from the results
-hr_results <- extract_hr_results(cox_models1)
+hr_results <- extract_hr_results(cox_models = cox_models1)
 
 #filter for beta values of subgroups and interactions
-# filtered_hr_results <- lapply(hr_results, function(df) {
-# 	df[
-# 		grepl(paste0(upf_q_or_bin, collapse = "|"), rownames(df)) |
-# 			!grepl(paste0(covars, collapse = "|"), rownames(df)),
-# 	]
-# })
-
-#25.02 new version, grepping splines issue
 upf_pattern <- paste(upf_q_or_bin, collapse = "|")
-filtered_hr_results <- lapply(hr_results, function(df) {
+filtered_hr_results<- lapply(hr_results, function(df) {
 	df[grepl(upf_pattern, rownames(df)), ]
 })
-#19.02 remove gate variables, they are not weighted
-filtered_hr_results1 <- lapply(filtered_hr_results, function(df) {
-	df[!grepl("nC", rownames(df)), ]
-})
 
+#19.02 filter gate variables, not needed for score calc
+# filtered_hr_results1 <- lapply(filtered_hr_results, function(df) {
+#   df[!grepl("nC", rownames(df)), ]
+# })
 
 #calculate the weighted sum of subgroups
 #based on beta values from the earlier cox models
-df <- calculate_weighted_score(df,outcome_labels, filtered_hr_results1)
+df <- calculate_weighted_score(df,outcome_labels, filtered_hr_results )
 
 weighted_scores <- c()
 for(oc in outcome_labels){ weighted_scores <- cbind (weighted_scores, paste0(oc, "_UPF_sg_weighted_sd"))}
 
-
 #fit weighted vs unweighted models
-cox_models_specific_scaled <- fit_models(outcome_t, outcome_s, scores=weighted_scores , covars_gate, stratify, df, outcome_labels)
+cox_models_specific_scaled <- fit_models(outcome_t, outcome_s, scores=weighted_scores , covars, stratify, df, outcome_labels)
 cox_models_nonspecific_scaled <- fit_models(outcome_t, outcome_s, scores=c("UPF_sg_sum_sd", "UPF_sg_sum_sd", "UPF_sg_sum_sd", "UPF_sg_sum_sd") , covars_gate, stratify, df, outcome_labels)
 
 ################################################################################
@@ -194,7 +116,7 @@ hr_combined<- split(hr_combined1, hr_combined1$variable)
 
 #get dataframe with weights for plotting
 #weights are for each quartile of each subgroup
-weights <- calc_weights(filtered_hr_results1, df, outcome_labels)
+weights <- calc_weights(filtered_hr_results, df, outcome_labels)
 
 #create all possible consumption profiles of subgroups using only highest vs lowest category
 consumption_profiles <- expand.grid(
@@ -221,8 +143,7 @@ weights_split_oc <- lapply(weights_split_oc, function(df) {
 	df$Exposure <- NULL  
 	return(df)
 })
-
-# 19.02 remove non-comsumers for plotting
+#19.02 filter gate vars, not needed for plot
 weights_split_oc_plot <- lapply(weights_split_oc, function(df) {
 	df[!grepl("nC", rownames(df)), ]
 })
@@ -232,6 +153,7 @@ plot_df <- weighted_score_for_plot(consumption_profiles, outcome_labels, weights
 #scale unweighted score by sd
 plot_df$UPF_sg_sum_sd <- plot_df$UPF_sg_sum / sd(df$UPF_sg_sum)
 
+
 ################################################################################
 #plotting-----------------------------------------------------------------------
 ################################################################################
@@ -239,7 +161,7 @@ plot_df$UPF_sg_sum_sd <- plot_df$UPF_sg_sum / sd(df$UPF_sg_sum)
 #plot the HR for weighted vs unweighted sum of UPFs
 #calculated as HR^score, dataframe is returned withe the corresponding numbers
 #each plot is stored as p_{outcome}
-create_outcome_plot(plot_df,hr_combined, outcome_labels)
+list_of_plot_dfs <- create_outcome_plot(plot_df,hr_combined, outcome_labels)
 
 #plot all outcomes in one plot
 grid.newpage()
@@ -295,16 +217,26 @@ for (oc in outcome_labels) {
 	df_interactions[[oc]] <- df_w[grep(":", rownames(df_w)), , drop = FALSE]
 }
 
-#insert empty rows for ref cat
-if(q_or_bin == "q"){
-df_main
-empty_r <- as.data.frame(matrix(NA, nrow = 1, ncol = ncol(df_main)))
-colnames(empty_r) <- colnames(df_main)
-df_main <- rbind(empty_r, df_main)
-df_main <- rbind(df_main[1:4, ], empty_r, df_main[5:nrow(df_main), ])
-df_main <- rbind(df_main[1:8, ], empty_r, df_main[9:nrow(df_main), ])
-df_main <- rbind(df_main[1:12, ], empty_r, df_main[13:nrow(df_main), ])
-df_main <- rbind(df_main[1:16, ], empty_r, df_main[17:nrow(df_main), ])
+#inster empty rows for ref cat
+if(q_or_bin == "q" && length(upf_q_or_bin) ==5){
+	df_main
+	empty_r <- as.data.frame(matrix(NA, nrow = 1, ncol = ncol(df_main)))
+	colnames(empty_r) <- colnames(df_main)
+	df_main <- rbind(empty_r, df_main)
+	df_main <- rbind(df_main[1:5, ], empty_r, df_main[6:nrow(df_main), ])
+	df_main <- rbind(df_main[1:10, ], empty_r, df_main[11:nrow(df_main), ])
+	df_main <- rbind(df_main[1:15, ], empty_r, df_main[16:nrow(df_main), ])
+	df_main <- rbind(df_main[1:20, ], empty_r, df_main[21:nrow(df_main), ])
+}
+
+if (length(upf_q_or_bin) ==4){
+	df_main
+	empty_r <- as.data.frame(matrix(NA, nrow = 1, ncol = ncol(df_main)))
+	colnames(empty_r) <- colnames(df_main)
+	df_main <- rbind(empty_r, df_main)
+	df_main <- rbind(df_main[1:4, ], empty_r, df_main[5:nrow(df_main), ])
+	df_main <- rbind(df_main[1:8, ], empty_r, df_main[9:nrow(df_main), ])
+	df_main <- rbind(df_main[1:12, ], empty_r, df_main[13:nrow(df_main), ])
 }
 #######HR, CI, Cindex, CI
 
@@ -338,112 +270,111 @@ for (oc in outcome_labels){
 	
 }
 
-#non-consumers
-df_nc <- data.frame(
-	n_nc = c(1, 2, 3, 4,5),
-	HR_nc_ORC = c(1, 2, 3, 4,5),
-	HR_nc_CVD = c(1, 2, 3, 4,5),
-	HR_nc_T2DM = c(1, 2, 3, 4,5),
-	HR_nc_Death = c(1, 2, 3, 4,5)
-)
-# Set row names
-rownames(df_nc) <- upf_q_or_bin
-
-for (sg in upf_q_or_bin){
-	sgnc <- paste0(sg,"nC")
-	n <- sum(as.numeric(as.character(df[[sgnc]])))
-	df_nc[sg, "n_nc"] <- n
-	for (oc in outcome_labels){
-	df_nc[sg, paste0("HR_nc_" ,oc)] <- paste0(filtered_hr_results[[oc]][paste0(sgnc, "1"), "hazard_ratio"],
-																																											" (",
-																																											filtered_hr_results[[oc]][paste0(sgnc, "1"), "lower_ci"],		
-																																											"-",
-																																											filtered_hr_results[[oc]][paste0(sgnc, "1"), "upper_ci"],		
-																																											")")
-																		
-	}
-	
-}
-
-
-# Function to round HR strings
-round_hr_string <- function(x) {
-	# Extract numbers
-	nums <- as.numeric(unlist(regmatches(x, gregexpr("[0-9.]+", x))))
-	
-	# Round to 2 decimals
-	nums <- round(nums, 2)
-	
-	# Reconstruct string
-	paste0(
-		sprintf("%.2f", nums[1]), " (",
-		sprintf("%.2f", nums[2]), "-",
-		sprintf("%.2f", nums[3]), ")"
-	)
-}
-
-# Apply to all HR columns
-hr_cols <- grep("^HR_", names(df_nc), value = TRUE)
-df_nc[hr_cols] <- lapply(df_nc[hr_cols], function(col) sapply(col, round_hr_string))
-
-df_nc
-
-#for cleaner hr_combined for plooting. not really needed
 hr_combined1 <- hr_combined1[!grepl("nC", hr_combined1$variable), ]
 
+library(dplyr)
+library(purrr)
+library(tibble)
+
+# 1. Daten extrahieren, zusammenfügen und Spalten ordnen
+final_table <- imap(filtered_hr_results, function(df, outcome_name) {
+	df %>%
+		as.data.frame() %>%
+		rownames_to_column("Variable") %>%
+		mutate(
+			HR_CI = sprintf("%.2f (%.2f-%.2f)", hazard_ratio, lower_ci, upper_ci)
+		) %>%
+		select(Variable, HR_CI) %>%
+		rename(!!sym(outcome_name) := HR_CI)
+}) %>%
+	reduce(full_join, by = "Variable") %>%
+	# Hier wird die neue Reihenfolge festgelegt
+	select(Variable, ORC, CVD, T2DM, Death) 
+
+# 2. Basis-Namen der Variablen extrahieren (z. B. "UPF_s1_rs")
+base_vars <- unique(sub("(_q.*)", "", final_table$Variable))
+
+# 3. Referenz-Zeilen generieren
+ref_rows <- tibble(
+	Variable = paste0(base_vars, "_ref"),
+	ORC = "Ref",
+	CVD = "Ref",
+	T2DM = "Ref",
+	Death = "Ref"
+)
+
+# 4. Zusammenfügen und korrekt sortieren
+final_table_with_refs <- bind_rows(ref_rows, final_table) %>%
+	# Erstellt eine Hilfsspalte zum Sortieren (damit "ref" immer als Erstes steht)
+	mutate(
+		BaseGroup = sub("(_q.*|_ref)", "", Variable),
+		IsRef = ifelse(grepl("_ref$", Variable), 0, 1)
+	) %>%
+	arrange(BaseGroup, IsRef, Variable) %>%
+	select(-BaseGroup, -IsRef)
+
+print(final_table_with_refs)
+write.csv(final_table_with_refs, "results/table_hr_sg.csv")
+# write.csv(plot_df, "results/plot_df_ukb_nogate.csv" )
+# write.csv(hr_combined1, "results/hr_combined_ukb_nogate.csv" )
+# write.csv(df_main, "results/table_weights_ukb_nogate.csv" )
+# write.csv(df_HR_Cind, "results/table_HR_ukb_nogate.csv" )
+# saveRDS(list_of_plot_dfs, "results/list_of_plot_dfs_nogate.rds")
 
 ################################################################################
 #save plots#
-################################################################################
-inter <- if (length(interactions) == 0) "noint" else "int"
-if(any(grep ("bmi", covars))){ inter <- paste0(inter, "_bmi_adj")}
-# or "noint"
-
-# Build filename prefix
-file_prefix <- paste0("orc_", sweet_or_pba, "_", q_or_bin, "_", inter)
-
-outcome_labels <- c("ORC", "CVD","T2DM", "Death")
-
-#plot the HR for weightes vs unweighted sum of UPFs
-#calculated as HR^score, dataframe is returned withe the corresponding numbers
-
-create_outcome_plot(plot_df,hr_combined, outcome_labels)
-
-library(forestplot)
-library(grid)
-w <- ifelse(q_or_bin == "q", 20, 19)
-
-svg(paste0("results/plot_", file_prefix, ".svg"), width = w, height = 12) ######132.8!!!!!!!!!!!!!!
-
-grid.newpage()
-grid.newpage()
-if (q_or_bin == "q") {
-	widths <- unit(c(10, 10, 15, 10), "null")
-} else {
-widths <- unit(rep(15, 4), "null")
-}
-	
-pushViewport(viewport(
-	layout = grid.layout(
-		nrow = 1,
-		ncol = 4,
-		widths = widths
-	)
-))
-
-draw_fp <- function(fp_obj, row, col) {
-	pushViewport(viewport(layout.pos.row = row, layout.pos.col = col))
-	print(fp_obj)  # must explicitly print the forestplot
-	upViewport()
-}
-
-# Draw the 4 forestplots
-draw_fp(p_ORC, 1, 1)
-draw_fp(p_CVD, 1, 2)
-draw_fp(p_T2DM, 1, 3)
-draw_fp(p_Death, 1, 4)
-
-dev.off()
+# ################################################################################
+# inter <- if (length(interactions) == 0) "noint" else "int"
+# if(any(grep ("bmi", covars))){ inter <- paste0(inter, "_bmi_adj")}
+# # or "noint"
+# 
+# # Build filename prefix
+# file_prefix <- paste0("orc_", sweet_or_pba, "_", q_or_bin, "_", inter, "_nogate")
+# 
+# outcome_labels <- c("ORC", "CVD","T2DM", "Death")
+# 
+# #plot the HR for weightes vs unweighted sum of UPFs
+# #calculated as HR^score, dataframe is returned withe the corresponding numbers
+# 
+# create_outcome_plot(plot_df,hr_combined, outcome_labels)
+# 
+# library(forestplot)
+# library(grid)
+# w <- ifelse(q_or_bin == "q", 20, 19)
+# 
+# svg(paste0("results/plot_", file_prefix, ".svg"), width = w, height = 12) ######132.8!!!!!!!!!!!!!!
+# 
+# grid.newpage()
+# grid.newpage()
+# if (q_or_bin == "q") {
+# 	widths <- unit(c(10, 10, 15, 10), "null")
+# } else {
+# widths <- unit(rep(15, 4), "null")
+# }
+# 	
+# pushViewport(viewport(
+# 	layout = grid.layout(
+# 		nrow = 1,
+# 		ncol = 4,
+# 		widths = widths
+# 	)
+# ))
+# 
+# draw_fp <- function(fp_obj, row, col) {
+# 	pushViewport(viewport(layout.pos.row = row, layout.pos.col = col))
+# 	print(fp_obj)  # must explicitly print the forestplot
+# 	upViewport()
+# }
+# 
+# # Draw the 4 forestplots
+# draw_fp(p_ORC, 1, 1)
+# draw_fp(p_CVD, 1, 2)
+# draw_fp(p_T2DM, 1, 3)
+# draw_fp(p_Death, 1, 4)
+# 
+# dev.off()
+# 
+# 
 
 ################################################################################
 #stuff#

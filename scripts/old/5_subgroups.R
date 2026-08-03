@@ -1,3 +1,5 @@
+# first version with no consideration of non-consumption
+
 rm(list=ls())
 setwd("C:/Users/kiliang98/phd/EPIC/alysha/analysis")
 library(haven)
@@ -14,7 +16,7 @@ df <- readRDS("data/working_file3.rds")
 # upf_s_5_rs <- c("UPF_s1_rs", "UPF_s2_rs", "UPF_s3_rs", "UPF_s4_rs", "UPF_s5_rs" )
 
 #16.2.26 new version, based on alternative definition of animalp subgroup
-upf_s_5 <- c( "UPF_beverages_g_day_noalc","UPF_animalp_g_day","UPF_sweets_g_day","UPF_bc_g_day",  "UPF_other3_g_day" )
+upf_s_5 <- c( "UPF_beverages_g_day_noalc","UPF_animalp_g_day","UPF_sweets_g_day","UPF_bc_g_day",  "UPF_other_g_day" )
 upf_s_5_rs <- c("UPF_s1_rs", "UPF_s2_rs", "UPF_s3_rs", "UPF_s4_rs", "UPF_s5_rs" )
 
 #grouping with PBA included, instead of sweets
