@@ -1,4 +1,5 @@
 **Author:** Kilian Gandolf
+
 **Last edited:** 03.08.2026
 
 This repository contains the code used for data cleaning, descriptive analyses, and the main statistical analyses for the paper:

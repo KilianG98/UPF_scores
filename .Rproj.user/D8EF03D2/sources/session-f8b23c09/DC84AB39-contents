@@ -1,0 +1,14 @@
+#
+data/*
+results/*
+scripts/old/*
+scripts/1_*
+scripts/2_*
+scripts/3_*
+*.log
+*.csv
+*dietscore*
+*orc*
+*.do
+*.Rhistory
+
