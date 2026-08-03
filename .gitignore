@@ -11,4 +11,8 @@ scripts/3_*
 *orc*
 *.do
 *.Rhistory
-
+.Rproj.user
+.RData*
+*.RData
+*.rdata
+*.rda
