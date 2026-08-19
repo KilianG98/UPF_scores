@@ -10,93 +10,76 @@ This repository contains the code used for data cleaning, descriptive analyses, 
 
 ---
 
-# Scripts
+## Phase 1: Data Preparation & Cleaning
 
-`1_Modifzierte_UPF_Subgroups_KR.do`
-Stata script used to  define the ultra-processed food (UPF) subgroups.
+**`1_Modifizierte_UPF_Subgroups_KR.do`**
+*   **Purpose:** Stata script used to define the ultra-processed food (UPF) subgroups.
 
-`2_dietscore.R`
-Script used to calculate dietary scores based on the baseline nutritional data.
+**`2_dietscore.R`**
+*   **Purpose:** Calculates dietary scores based on the baseline nutritional data.
 
-`3_orc.R`
-Script used to generate obesity-related Cancers variable.
+**`3_orc.R`**
+*   **Purpose:** Generates the obesity-related cancers (ORC) variable.
 
-`4_cleaning.R`
-Script used to perform the final data cleaning steps and prepare the analysis dataset. 
-
-Input:
-* "UKB_data_all3.rds": dataset with added variables for ORC, dietscore, and UPF subgroups.
-
-Output:
-* "working_file3.rds": dataset with cleaned variables, exclusion criteria applied, unneccessary variables removed.
-
-`5_0_subgroups_main.R`
-Script used for residual Energy adjustemnt of UPF subgroups and creation of quartiles.
-
-Input:
-* "working_file3.rds": cleaned dataset
-
-Output:
-* "working_file_w_SG3.rds": main dataset with quartiles of energy adjusted subgroups.
-
-`5_1_subgroups_crude.R`
-*(Optional step)* Script used to generate quartiles without residual energy adjustment.
-
-Input:
-* "working_file3.rds": cleaned dataset, does not have energy adjusted subgroups
-
-Output:
-* "working_file_w_SG3_crude.rds": main dataset, now contains variables with quartiles of energy adjusted subgroups
-
-`5_2_lag_time.R`
-*(Optional step)* Script used to generate file for lag-time Analysis.
-
-Input:
-* "working_file_w_SG3.rds": main dataset.
-
-Output:
-* "working_file_w_SG3_lag.rds": dataset with lag time implemented.
-
-`6_main_analysis.R`
-Script used to perform the primary statistical analyses. 
-
-Input:
-* "working_file_w_SG3.rds": main dataset.
-* "X_analysis_functions.R": r file with functions used in the script.
-
-Output: 
-* "table_weights.csv": table of all weights for all outcomes.
-* "table_hr_sg.csv": table of hazard ratios for each subgroup and outcome.
-* "table_HR_Cind.csv": table of hazard ratios and C-indices for both scores.
-* "list_of_plot_dfs.rds": list of dataframes which contain all information for plotting of HRs across both scores and all consumption profiles
-
-`7_validation.R`
-Script used to run crossvalidation.
-
-Input:
-* "working_file_w_SG3.rds": main dataset.
-* "X_analysis_functions.R": r file with functions used in the script.
-"filtered_hr_results_validation.rds": dataset with hazard ratios/beta values derived in the other cohort.
-
-Output:
-* "HR_Cind_crossvalidation.csv": table fo Hazard ratios and C-Indices for the weighted score in the crossvalidation.
-
-`8_sensitivity.R`
-Script used to perform sensitivity analyses. Alternate between datasets, exposure variables, and adjustment to generate desired outputs.
-
-Input:
-* "X_analysis_functions.R": r file with functions used in the script.
-* "working_file_w_SG3.rds": main dataset
-* "working_file_w_SG3_lag.rds": dataset for lag-time analysis.
-* "working_file_w_SG3_crude.rds": dataset for analysis without energy adjustment.
-
-Output:
-* "table_weights_suffix.csv": table of all weights for all outcomes. 
-* "table_HR_cind_suffix.csv": table of hazard ratios and c-indices for both scores and all outcomes.
-Suffix will be adapted to the type of sensitivity analysis.
-
-`X_analysis_functions.R`
-Contains statistical helper functions.
-
+**`4_cleaning.R`**
+*   **Purpose:** Performs the final data cleaning steps and prepares the analysis dataset.
+*   **Inputs:** `"UKB_data_all3.rds"` (Dataset with added variables for ORC, dietscore, and UPF subgroups).
+*   **Outputs:** `"working_file3.rds"` (Cleaned dataset with exclusion criteria applied and unnecessary variables removed).
 
 ---
+
+## Phase 2: Subgroup Adjustments
+
+**`5_0_subgroups_main.R`**
+*   **Purpose:** Performs residual energy adjustment of UPF subgroups and creates quartiles.
+*   **Inputs:** `"working_file3.rds"` (Cleaned dataset).
+*   **Outputs:** `"working_file_w_SG3.rds"` (Main dataset with quartiles of energy-adjusted subgroups).
+
+**`5_1_subgroups_crude.R`** *(Optional step)*
+*   **Purpose:** Generates quartiles without residual energy adjustment.
+*   **Inputs:** `"working_file3.rds"`
+*   **Outputs:** `"working_file_w_SG3_crude.rds"` (Dataset containing quartiles of crude subgroups).
+
+**`5_2_lag_time.R`** *(Optional step)*
+*   **Purpose:** Generates the file required for lag-time analysis.
+*   **Inputs:** `"working_file_w_SG3.rds"`
+*   **Outputs:** `"working_file_w_SG3_lag.rds"` (Dataset with lag time implemented).
+
+---
+
+## Phase 3: Primary Analysis & Validation
+
+**`6_main_analysis.R`**
+*   **Purpose:** Performs the primary statistical analyses.
+*   **Inputs:** 
+    *   `"working_file_w_SG3.rds"`
+    *   `"X_analysis_functions.R"`
+*   **Outputs:** 
+    *   `"table_weights.csv"` (All weights for all outcomes).
+    *   `"table_hr_sg.csv"` (Hazard ratios for each subgroup and outcome).
+    *   `"table_HR_Cind.csv"` (Hazard ratios and C-indices for both scores).
+    *   `"list_of_plot_dfs.rds"` (List of dataframes for plotting HRs across scores and consumption profiles).
+
+**`7_validation.R`**
+*   **Purpose:** Runs cross-validation.
+*   **Inputs:** 
+    *   `"working_file_w_SG3.rds"`
+    *   `"X_analysis_functions.R"`
+    *   `"filtered_hr_results_validation.rds"` (Hazard ratios/beta values derived in the other cohort).
+*   **Outputs:** `"HR_Cind_crossvalidation.csv"` (Hazard ratios and C-indices for the weighted score in the cross-validation).
+
+**`8_sensitivity.R`**
+*   **Purpose:** Performs sensitivity analyses by alternating between datasets, exposure variables, and adjustments.
+*   **Inputs:** 
+    *   `"X_analysis_functions.R"`
+    *   `"working_file_w_SG3.rds"`, `"working_file_w_SG3_lag.rds"`, or `"working_file_w_SG3_crude.rds"` (Depending on the target analysis).
+*   **Outputs:** 
+    *   `"table_weights_[suffix].csv"`
+    *   `"table_HR_cind_[suffix].csv"` *(Note: Suffix dynamically adapts to the type of sensitivity analysis).*
+
+---
+
+## Helper Scripts
+
+**`X_analysis_functions.R`**
+*   **Purpose:** Contains statistical helper functions sourced by the main analysis scripts.
