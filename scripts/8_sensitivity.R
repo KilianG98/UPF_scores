@@ -11,13 +11,13 @@ library(stringr)
 library(forestplot)
 library(rms)
 
-source("scripts/nogate/X_analysis_functions_nogate.R")
+source("scripts/X_analysis_functions.R")
 
-# df<- readRDS("data/working_file_w_SG3.rds")
+df<- readRDS("data/working_file_w_SG3.rds")
 #for lag time
 # df<- readRDS("data/working_file_w_SG3_lag.rds")
 #for crude variable
-df<- readRDS("data/working_file_w_SG3_crude.rds")
+# df<- readRDS("data/working_file_w_SG3_crude.rds")
 
 summary(df$UPF_g_day_noalc)
 sd(df$UPF_g_day_noalc)
@@ -27,7 +27,7 @@ sd(df$UPF_g_day_noalc)
 ################################################################################
 
 covars <- c("energy_intake_overall", "alc_stat_0_0_touch",  "smoke_stat_0_0", "pa_total_mets", "education_cat2","score_diet", 
-												 "ever_hrt_0_0", "menopause_status_0_0") # "bmi_m_0_0"
+												 "ever_hrt_0_0", "menopause_status_0_0", "bmi_m_0_0") # "bmi_m_0_0"
 stratify <- c("assess_cen",  "age_cat_5yr", "sex")
 
 
@@ -37,7 +37,7 @@ stratify <- c("assess_cen",  "age_cat_5yr", "sex")
 upf_sg_5_q <- c("UPF_s1_rs_q", "UPF_s2_rs_q", "UPF_s3_rs_q", "UPF_s4_rs_q", "UPF_s5_rs_q")
 
 #PBA
-#upf_sg_5_bin <- c("UPF_sg1_rs_bin", "UPF_sg2_rs_bin", "UPF_sg3_rs_bin", "UPF_sg4_rs_bin", "UPF_sg5_rs_bin" )
+# upf_sg_5_bin <- c("UPF_sg1_rs_bin", "UPF_sg2_rs_bin", "UPF_sg3_rs_bin", "UPF_sg4_rs_bin", "UPF_sg5_rs_bin" )
 #sweets
 upf_sg_5_bin <-c("UPF_s1_rs_bin", "UPF_s2_rs_bin", "UPF_s3_rs_bin", "UPF_s4_rs_bin", "UPF_s5_rs_bin" )
 
@@ -46,7 +46,7 @@ upf_sg_5_bin <-c("UPF_s1_rs_bin", "UPF_s2_rs_bin", "UPF_s3_rs_bin", "UPF_s4_rs_b
 #set quartiles or binary classification
 upf_q_or_bin <- upf_sg_5_q
 #set max level accordingly
-max_l <- ifelse(all(upf_q_or_bin == upf_sg_5_q), 3, 1)
+max_l <- ifelse(all(upf_q_or_bin == upf_sg_5_q), 4, 2)
 #helper_vars indicating grouping
 sweet_or_pba <- ifelse(startsWith(upf_q_or_bin[1], "UPF_s1"), "sweet", "pba")
 q_or_bin<- ifelse(all(upf_q_or_bin == upf_sg_5_q), "q", "bin")
@@ -56,7 +56,6 @@ df$UPF_sg_sum <- rowSums(
 	data.frame(lapply(df[, upf_q_or_bin], function(x) {
 		# 17.02 Convert factor → character → numeric, recoding "nC" as 0
 		x <- as.character(x)
-		x[x == "nC"] <- "0"
 		as.numeric(x)
 	}))
 )
@@ -74,7 +73,7 @@ covars_gate <- c(covars, gate_adjust)
 
 ################################################################################
 #get significant interactions between subgroups--------------------------------
-################################################################################
+# ################################################################################
 # #uncommment entire section to perform interaction analysis.
 # 
 # #get a list of interactions and p-values of improving the models as compared to
@@ -163,7 +162,7 @@ for(oc in outcome_labels){ weighted_scores <- cbind (weighted_scores, paste0(oc,
 
 #fit weighted vs unweighted models
 cox_models_specific_scaled <- fit_models(outcome_t, outcome_s, scores=weighted_scores , covars, stratify, df, outcome_labels)
-cox_models_nonspecific_scaled <- fit_models(outcome_t, outcome_s, scores=c("UPF_sg_sum_sd", "UPF_sg_sum_sd", "UPF_sg_sum_sd", "UPF_sg_sum_sd") , covars_gate, stratify, df, outcome_labels)
+cox_models_nonspecific_scaled <- fit_models(outcome_t, outcome_s, scores=c("UPF_sg_sum_sd", "UPF_sg_sum_sd", "UPF_sg_sum_sd", "UPF_sg_sum_sd") , covars, stratify, df, outcome_labels)
 
 ################################################################################
 #extracting results-------------------------------------------------------------
@@ -343,11 +342,11 @@ if(any(grep ("bmi", covars))){ inter <- paste0(inter, "_bmi_adj")}
 
 
 # Build filename prefix
-file_prefix <- paste0(sweet_or_pba, "_", q_or_bin, "_", inter, "_nogate_sensi_lag")
+file_suffix <- paste0(sweet_or_pba, "_", q_or_bin, "_", inter, "_nogate_sensi")
 
 # write.csv(plot_df, "results/plot_df_ukb_nogate.csv" )
 # write.csv(hr_combined1, "results/hr_combined_ukb_nogate.csv" )
-write.csv(df_main, paste0("results/table_weights_ukb_", file_prefix, "_crude.csv" ))
-write.csv(df_HR_Cind, paste0("results/table_HR_ukb_", file_prefix, "_crude.csv" ))
-# saveRDS(df_interactions, paste0("results/df_interactions_", file_prefix, ".rds" ))
+# write.csv(df_main, paste0("results/table_weights_", file_suffix, "_crude.csv" ))
+write.csv(df_HR_Cind, paste0("results/table_HR_cind_", file_suffix, ".csv" ))
+# saveRDS(df_interactions, paste0("results/df_interactions_", file_suffix, ".rds" ))
 

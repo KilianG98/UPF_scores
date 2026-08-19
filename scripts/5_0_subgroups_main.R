@@ -45,14 +45,13 @@ make_resid_vars <- function(vars, outnames, data) {
 df <- make_resid_vars(upf_s_5, upf_s_5_rs, df)
 df <- make_resid_vars(upf_sg_5, upf_sg_5_rs, df)
 
-
-#17.2, nCs are introduced (non consumer)
-#19.02 nC change to 0
 #make quantiles and binary calssification
+
+#subgroups are scored as -1 to 3, with non-consumer -1, Q1=0, ..., Q4=3
 df <- df %>%
 	mutate(across(
 		all_of(upf_s_5_rs),
-		~ factor(ifelse(is.na(.), "nC", ntile(., 4) - 1)),
+		~ relevel(factor(ifelse(is.na(.), "-1", as.numeric(ntile(., 4))-1)), ref= "0"),
 		.names = "{.col}_q"
 	))
 
@@ -60,14 +59,14 @@ df <- df %>%
 df <- df %>%
 	mutate(across(
 		all_of(upf_s_5_rs),
-		~ factor(ifelse(is.na(.), "nC", ntile(., 2) - 1)),
+		~ relevel(factor(ifelse(is.na(.), "-1", as.numeric(ntile(., 2))-1)), ref= "0"),
 		.names = "{.col}_bin"
 	))
-
+#for pba
 df <- df %>%
 	mutate(across(
 		all_of(upf_sg_5_rs),
-		~ factor(ifelse(is.na(.), "nC", ntile(., 4) - 1)),
+		~ relevel(factor(ifelse(is.na(.), "-1", as.numeric(ntile(., 4))-1)), ref= "0"),
 		.names = "{.col}_q"
 	))
 
@@ -80,9 +79,6 @@ df <- df %>%
 
 upf_sg_5_q <- c("UPF_s1_rs_q", "UPF_s2_rs_q", "UPF_s3_rs_q", "UPF_s4_rs_q", "UPF_s5_rs_q") 
 
-
-#save file
-#saveRDS(df, file="data/working_file_w_SG2.rds")
 
 saveRDS(df, file="data/working_file_w_SG3.rds")
 

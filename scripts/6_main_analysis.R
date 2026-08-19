@@ -14,7 +14,7 @@ library(stringr)
 library(forestplot)
 library(rms)
 
-source("scripts/nogate/X_analysis_functions_nogate.R")
+source("scripts/X_analysis_functions.R")
 
 df<- readRDS("data/working_file_w_SG3.rds")
 
@@ -37,6 +37,7 @@ upf_sg_5_q <- c("UPF_s1_rs_q", "UPF_s2_rs_q", "UPF_s3_rs_q", "UPF_s4_rs_q", "UPF
 upf_q_or_bin <- upf_sg_5_q
 #set max level accordingly
 max_l <- ifelse(all(upf_q_or_bin == upf_sg_5_q), 3, 1)
+min_l =-1
 #helper_vars indicating grouping
 sweet_or_pba <- ifelse(startsWith(upf_q_or_bin[1], "UPF_s1"), "sweet", "pba")
 q_or_bin<- ifelse(all(upf_q_or_bin == upf_sg_5_q), "q", "bin")
@@ -46,7 +47,6 @@ df$UPF_sg_sum <- rowSums(
 	data.frame(lapply(df[, upf_q_or_bin], function(x) {
 		# 17.02 Convert factor → character → numeric, recoding "nC" as 0
 		x <- as.character(x)
-		x[x == "nC"] <- "0"
 		as.numeric(x)
 	}))
 )
@@ -70,7 +70,7 @@ covars_gate <- c(covars, gate_adjust)
 #introduce lvl_ids to df. lvl_ids indicate if var == lvl
 #one lvl id for each lvl of each var will be created.
 #This will be used later for calculation of the score.
-tmp_res <- get_lvl_ids(vars=upf_q_or_bin,max_l= max_l, df=df)
+tmp_res <- get_lvl_ids(vars=upf_q_or_bin,max_l= max_l,min_l =min_l, df=df)
 df <- tmp_res$df
 lvl_vars <- tmp_res$new_vars
 
@@ -100,7 +100,7 @@ for(oc in outcome_labels){ weighted_scores <- cbind (weighted_scores, paste0(oc,
 
 #fit weighted vs unweighted models
 cox_models_specific_scaled <- fit_models(outcome_t, outcome_s, scores=weighted_scores , covars, stratify, df, outcome_labels)
-cox_models_nonspecific_scaled <- fit_models(outcome_t, outcome_s, scores=c("UPF_sg_sum_sd", "UPF_sg_sum_sd", "UPF_sg_sum_sd", "UPF_sg_sum_sd") , covars_gate, stratify, df, outcome_labels)
+cox_models_nonspecific_scaled <- fit_models(outcome_t, outcome_s, scores=c("UPF_sg_sum_sd", "UPF_sg_sum_sd", "UPF_sg_sum_sd", "UPF_sg_sum_sd") , covars, stratify, df, outcome_labels)
 
 ################################################################################
 #extracting results-------------------------------------------------------------
@@ -314,12 +314,12 @@ final_table_with_refs <- bind_rows(ref_rows, final_table) %>%
 	select(-BaseGroup, -IsRef)
 
 print(final_table_with_refs)
-write.csv(final_table_with_refs, "results/table_hr_sg.csv")
-# write.csv(plot_df, "results/plot_df_ukb_nogate.csv" )
-# write.csv(hr_combined1, "results/hr_combined_ukb_nogate.csv" )
-# write.csv(df_main, "results/table_weights_ukb_nogate.csv" )
-# write.csv(df_HR_Cind, "results/table_HR_ukb_nogate.csv" )
-# saveRDS(list_of_plot_dfs, "results/list_of_plot_dfs_nogate.rds")
+# write.csv(final_table_with_refs, "results/table_hr_sg.csv")
+# write.csv(plot_df, "results/plot_df.csv" )
+# # write.csv(hr_combined1, "results/hr_combined.csv" )
+# # # write.csv(df_main, "results/table_weights.csv" )
+# '# # write.csv(df_HR_Cind, "results/table_HR_Cind.csv" )'
+# saveRDS(list_of_plot_dfs, "results/list_of_plot_dfs.rds")
 
 ################################################################################
 #save plots#
@@ -375,77 +375,3 @@ write.csv(final_table_with_refs, "results/table_hr_sg.csv")
 # dev.off()
 # 
 # 
-
-################################################################################
-#stuff#
-################################################################################
-
-# #plot HR of quart sum vs weighted score (both sd)
-# ggplot(hr_combined, aes(x = variable, y = hazard_ratio, fill = model_label)) +
-#   geom_bar(stat = "identity", position = "dodge") +
-#   geom_errorbar(aes(ymin = lower_ci, ymax = upper_ci), position = position_dodge(width = 0.9), width = 0.2) +
-#   theme_minimal() +
-#   labs(
-#     title = "Comparison of Hazard Ratios",
-#     x = "Variable",
-#     y = "Hazard Ratio",
-#     fill = "Model"
-#   ) +
-#   scale_y_log10() +
-#   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-
-
-
-
-
-
-# run_cox <- function(exposure, covars, strat, outcome_age, outcome_status ){
-# 
-#   
-#   formula <- as.formula(
-#     paste(
-#       "Surv(age_recr,", outcome_age, ", ",  outcome_status,  ") ~ ",
-#       paste(exposure, collapse = " + "), " + ",
-#       paste(covars, collapse = " + "), 
-#       "+ strata(", paste(strat, collapse = " , "), ")"
-#     )
-#   )
-#   
-#   cox <- cox <- coxph(formula, data=df)
-#   print(outcome_status)
-#   print(summary(cox))
-# }
-# 
-# 
-# for (i in seq_along(outcome_s)){
-#   run_cox("UPF_tot_q", covars, stratify, outcome_t[i], outcome_s[i])
-# }
-# 
-# for (i in seq_along(outcome_s)){
-#   run_cox(upf_sg_5_q, covars, stratify, outcome_t[i], outcome_s[i])
-# }
-# 
-# for (i in seq_along(outcome_s)){
-#   run_cox("UPF_quart_sum", covars,stratify, outcome_t[i], outcome_s[i])
-# }
-
-
-
-# #for the weighted score we need binary indicators -> is var[x] == lvl?
-# upf_bin_forw <- c()
-# for (upfqb in upf_q_or_bin){
-#   upf_bin_forw <- c(upf_bin_forw, paste0(upfqb, "_forw"))
-# }
-# consumption_profiles_bin_forw <- expand.grid(
-#   setNames(
-#     lapply(upf_bin_forw, function(x) {
-#       c(0, 1)
-#     }),
-#     upf_bin_forw
-#   ),
-#   stringsAsFactors = FALSE
-# )
-
-#merge consumption profiles for unweighted and weighted score into one
-#consumption_profiles <- cbind(consumption_profiles, consumption_profiles_bin_forw)

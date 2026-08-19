@@ -37,7 +37,7 @@ df <- df %>%
 	mutate(across(all_of(upf_s_5_rs), ~ na_if(., 0))) %>%
 	mutate(across(
 		all_of(upf_s_5_rs),
-		~ factor(ifelse(is.na(.), "nC", ntile(., 4) - 1)),
+		~ relevel(factor(ifelse(is.na(.), "-1", as.numeric(ntile(., 4))-1)), ref= "0"),
 		.names = "{.col}_q"
 	))
 

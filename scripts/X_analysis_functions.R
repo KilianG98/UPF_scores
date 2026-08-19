@@ -111,20 +111,20 @@ select_inters <- function(inters_sorted, outcome_t, outcome_s, exposures, covari
 ################################################################################
 
 #make vars indicating whether var == level
-get_lvl_ids <- function(vars, max_l, df){
+get_lvl_ids <- function(vars, max_l,min_l, df){
 	new_vars <- c() 
 	
 	for(var in vars){
 		
-		for (i in 1:max_l){
+		for (i in min_l:max_l){
 			new_var_name <- paste0(var, i)
 			df[[new_var_name]] <- df[[var]] == i
 			new_vars <- c(new_vars, new_var_name)
 		}
-		#3.7.26 adapted to also included non-consumers (hardcoded, shame on you)
-		new_var_name <- paste0(var, "nC")
-		df[[new_var_name]] <- df[[var]] == "nC"
-		new_vars <- c(new_vars, new_var_name)
+		# #3.7.26 adapted to also included non-consumers (hardcoded, shame on you)
+		# new_var_name <- paste0(var, "nC")
+		# df[[new_var_name]] <- df[[var]] == "nC"
+		# new_vars <- c(new_vars, new_var_name)
 	}
 	
 	return(list(
@@ -438,6 +438,11 @@ weighted_score_for_plot <- function(data, outcome_labels, expo_weights) {
 			} else {
 				exp <- substr(expo, 1, nchar(expo) - 1)
 				lev <- str_sub(expo, -1)
+				#non-consumers are not considered in plot, -1 breaks the code otheriwse, 
+				#bc the characteres are longer then
+				if (endsWith(exp, "-")) {
+					next 
+				}
 				data[[paste0(outcome, "_UPF_sg_weighted_sd")]] <- data[[paste0(outcome, "_UPF_sg_weighted_sd")]] + beta * as.numeric(data[[exp]] == lev)
 			}
 		}

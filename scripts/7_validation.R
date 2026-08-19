@@ -8,7 +8,7 @@ library(stringr)
 library(forestplot)
 library(rms)
 
-source("scripts/nogate/X_analysis_functions_nogate.R")
+source("scripts/nogate/X_analysis_functions.R")
 
 # df<- readRDS("data/working_file_w_SG2.rds")
 
@@ -86,7 +86,7 @@ lvl_vars <- tmp_res$new_vars
 #based on beta values from the earlier cox models
 #df <- calculate_weighted_score_validation(df,outcome_labels, weights_valid)
 
-filtered_hr_results <- readRDS("data/EPIC_filtered_hr_results_validation.rds")
+filtered_hr_results <- readRDS("data/filtered_hr_results_validation.rds")
 
 df <- calculate_weighted_score(df,outcome_labels, filtered_hr_results )
 

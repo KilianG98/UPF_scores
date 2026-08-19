@@ -9,8 +9,8 @@ library(forestplot)
 library(rms)
 
 df<- readRDS("data/working_file_w_SG3.rds")
-plot_df <- read.csv("results/plot_df_ukb_nogate.csv", row.names = 1) 
-list_of_plot_dfs <- readRDS("results/list_of_plot_dfs_nogate.rds")
+plot_df <- read.csv("results/plot_df_ukb_nogate_v2.csv", row.names = 1) 
+list_of_plot_dfs <- readRDS("results/list_of_plot_dfs_nogate_v2.rds")
 
 expo_cols <- grepl("rs_q", names(plot_df)) 
 expo_df <- plot_df[, expo_cols]
@@ -47,6 +47,6 @@ plot_df$n_exposed <- final_counts$n
 for(name in names(list_of_plot_dfs)){
 	list_of_plot_dfs[[name]]$n_exposed <- final_counts$n
 	
-	write.csv(list_of_plot_dfs[[name]], paste0("results/plot_df_ukb_nogate_", name, ".csv" ))
+	write.csv(list_of_plot_dfs[[name]], paste0("results/plot_df_ukb_nogate_", name, "v2.csv" ))
 }
 
