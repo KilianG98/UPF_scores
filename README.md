@@ -31,6 +31,7 @@ This repository contains the code used for data cleaning, descriptive analyses, 
 ## Phase 2: Subgroup Adjustments
 
 **`5_0_subgroups_main.R`**
+
 **Performs residual energy adjustment of UPF subgroups and creates quartiles.**
 *   **Inputs:** `"working_file3.rds"` (Cleaned dataset).
 *   **Outputs:** `"working_file_w_SG3.rds"` (Main dataset with quartiles of energy-adjusted subgroups).
