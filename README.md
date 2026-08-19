@@ -31,16 +31,16 @@ This repository contains the code used for data cleaning, descriptive analyses, 
 ## Phase 2: Subgroup Adjustments
 
 **`5_0_subgroups_main.R`**
-*   **Purpose:** Performs residual energy adjustment of UPF subgroups and creates quartiles.
+*   **Performs residual energy adjustment of UPF subgroups and creates quartiles.**
 *   **Inputs:** `"working_file3.rds"` (Cleaned dataset).
 *   **Outputs:** `"working_file_w_SG3.rds"` (Main dataset with quartiles of energy-adjusted subgroups).
 
-**`5_1_subgroups_crude.R`** *(Optional step)*
+**`5_1_subgroups_crude.R`** *(for sensitivity analyisis)*
 *   **Purpose:** Generates quartiles without residual energy adjustment.
 *   **Inputs:** `"working_file3.rds"`
 *   **Outputs:** `"working_file_w_SG3_crude.rds"` (Dataset containing quartiles of crude subgroups).
 
-**`5_2_lag_time.R`** *(Optional step)*
+**`5_2_lag_time.R`** *(for sensitivity analyisis)*
 *   **Purpose:** Generates the file required for lag-time analysis.
 *   **Inputs:** `"working_file_w_SG3.rds"`
 *   **Outputs:** `"working_file_w_SG3_lag.rds"` (Dataset with lag time implemented).
