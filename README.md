@@ -1,10 +1,13 @@
-# Beyond total ultra-processed food intake: consumption profiles and risk of cancer, cardiometabolic disease and mortality
+# Beyond total ultra-processed food intake: distinct consumption profiles and risks of cancer, cardiometabolic disease and mortality
 
 **Author:** Kilian Gandolf
+
 **Last edited:** 19.08.2026
+
 **DOI:** *(to be added)*
 
-This repository contains the code used for data cleaning, descriptive analyses, and the main statistical analyses for the paper.
+This repository contains code used for data preparation, cleaning, and analyses.
+Data used for this analysis is sensitive and cannot be provided here. For information on how to submit an application for gaining access to EPIC data and/or biospecimens, please follow the instructions at http://epic.iarc.fr/access/index.php. UK Biobank is an open access resource. Bona fide researchers can apply to use the UK Biobank dataset by registering and applying at http://ukbiobank.ac.uk/register-apply/.
 
 ---
 

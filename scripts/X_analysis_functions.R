@@ -65,6 +65,7 @@ get_interactions_hlp <- function(vars, max_l) {
 	return(interactions)
 }
 
+#helperfunction for get_significnat interactions
 #receives neccessary vars, returns cox model
 get_cox <- function(outcometimes, outcome_status, exposures,covariates, strat, data){
 	exposures <- as.character(exposures)
@@ -81,6 +82,8 @@ get_cox <- function(outcometimes, outcome_status, exposures,covariates, strat, d
 	
 }
 
+#selects interactions that impove the model
+#uses forward selection alfgorithm, until lrt indicates no significant improvement (p >= 0.05)
 select_inters <- function(inters_sorted, outcome_t, outcome_s, exposures, covariates, strat, data) {
 	
 	cox_old <- get_cox(outcometimes = outcome_t, outcome_status = outcome_s, exposures, covariates, strat, data)

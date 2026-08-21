@@ -3,8 +3,6 @@
 #6.7.26 version without gate variable adjusmten in the weighed score
 # non-consumers now contribute to the weighted score. unweighted score gets adjusted for non-consumption.
 
-
-
 rm(list=ls())
 
 library(survival)
@@ -316,9 +314,9 @@ final_table_with_refs <- bind_rows(ref_rows, final_table) %>%
 print(final_table_with_refs)
 # write.csv(final_table_with_refs, "results/table_hr_sg.csv")
 # write.csv(plot_df, "results/plot_df.csv" )
-# # write.csv(hr_combined1, "results/hr_combined.csv" )
-# # # write.csv(df_main, "results/table_weights.csv" )
-# '# # write.csv(df_HR_Cind, "results/table_HR_Cind.csv" )'
+# write.csv(hr_combined1, "results/hr_combined.csv" )
+# write.csv(df_main, "results/table_weights.csv" )
+# write.csv(df_HR_Cind, "results/table_HR_Cind.csv" )
 # saveRDS(list_of_plot_dfs, "results/list_of_plot_dfs.rds")
 
 ################################################################################
