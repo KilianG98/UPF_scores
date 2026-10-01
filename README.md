@@ -2,7 +2,7 @@
 
 **Author:** Kilian Gandolf
 
-**Last edited:** 19.08.2026
+**Last edited:** 01.10.2026
 
 **DOI:** *(to be added)*
 
@@ -18,6 +18,7 @@ All scripts in this folder should take less than 10 minutes to run on a normal d
 This repository contains code used for data preparation, cleaning, and analyses.
 Data used for this analysis is sensitive and cannot be provided here. For information on how to submit an application for gaining access to EPIC data and/or biospecimens, please follow the instructions at http://epic.iarc.fr/access/index.php. UK Biobank is an open access resource. Bona fide researchers can apply to use the UK Biobank dataset by registering and applying at http://ukbiobank.ac.uk/register-apply/.
 
+All R packages used in the analyses are publicly available. As the study data cannot be made publicly available, users may consult the documentation and vignettes of the R packages used, which provide guidance and, where available, example datasets that can be used to test the code.
 
 ---
 
