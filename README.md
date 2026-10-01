@@ -6,8 +6,15 @@
 
 **DOI:** *(to be added)*
 
-**System requirements:** Windows 11 Version 25H2, RStudio 2026.05.0+218, R 4.4.1, Stata/SE 18.0 
+**System requirements:** Windows 11 Version 25H2, RStudio 2026.05.0+218, R 4.4.1, Stata/SE 18.0
 
+Required packages are listed at the top of each script. If not installed, these must first be installed to your R library.
+Packages are available for download from a CRAN repository. Any additional functions required to run the scripts (i.e. those not in an R package) are provided in the script named “X_analysis_functions.R”.
+
+**Run Time:**
+All scripts in this folder should take less than 10 minutes to run on a normal desktop computer.
+
+**Data availability:**
 This repository contains code used for data preparation, cleaning, and analyses.
 Data used for this analysis is sensitive and cannot be provided here. For information on how to submit an application for gaining access to EPIC data and/or biospecimens, please follow the instructions at http://epic.iarc.fr/access/index.php. UK Biobank is an open access resource. Bona fide researchers can apply to use the UK Biobank dataset by registering and applying at http://ukbiobank.ac.uk/register-apply/.
 ---
